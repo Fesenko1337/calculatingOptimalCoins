@@ -73,10 +73,8 @@ void findOptimalPayment(int purchaseSum, int maxSearchLimit, const QVector<int>&
             /*
              * Если оптимальная сумма оплаты ещё не найдена
              * ИЛИ количество монет меньше уже найденного
-             * ИЛИ количество монет равно, но текущая сумма меньше уже найденной
             */
-            if (optimalPayment == -1 || currentCoinsCount < minCoinsCount
-            || (currentCoinsCount == minCoinsCount && currentSum < optimalPayment))
+            if (optimalPayment == -1 || currentCoinsCount < minCoinsCount)
             {
                 optimalPayment = currentSum; // Зафиксировать текущую сумму как оптимальную сумму оплаты
                 minCoinsCount = currentCoinsCount; // Зафиксировать соответствующее текущей сумме количество монет как минимальное
@@ -125,7 +123,7 @@ void calculateOptimalCoins(int purchaseSum, const QVector<int>& nominals, int& c
 {
     QVector<int> minCoins;
     QVector<int> lastUsedCoin;
-    int optimalPayment = 0;
+    int optimalPayment = -1;
 
     // Для каждой возможной суммы оплаты вычислить минимальное количество монет и записать последний использованный номинал
     int maxSearchLimit = fillReachabilityTable(purchaseSum, nominals, minCoins, lastUsedCoin);
