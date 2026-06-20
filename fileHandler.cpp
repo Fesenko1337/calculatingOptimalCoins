@@ -69,9 +69,10 @@ bool writeResultToFile(const QString& filePath, int change, const QMap<int, int>
     // Записать открывающий тег <nominals>
     outStream << "  <nominals>\n";
 
-    // Для каждого номинала в usedCoins
-    for (auto it = usedCoins.constBegin(); it != usedCoins.constEnd(); ++it)
+    // Для каждого номинала в usedCoins в порядке убывания номинала
+    for (auto it = usedCoins.constBegin(); it != usedCoins.constEnd(); )
     {
+        --it; // Переходим к предыдущему элементу (от конца к началу)
         int nominal = it.key();
         int count = it.value();
 
