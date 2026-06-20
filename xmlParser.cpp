@@ -22,6 +22,8 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
     bool nominalsFound = false; // Найден ли тег <nominals>
     bool insideNominals = false; // Находимся ли мы внутри тега <nominals>
     QSet<int> uniqueNominals; // Множество для проверки уникальности номиналов
+    int totalValueTagsCount = 0; // Общее количество тегов <value>
+    int lastValueLineNumber = 0; // Номер строки последнего тега <value>
 
     // Проверить корректность синтаксиса XML и извлечь данные
     while (!xml.atEnd())
@@ -108,6 +110,8 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
             }
             else if (tagName == "value")
             {
+                totalValueTagsCount++;
+                lastValueLineNumber = xml.lineNumber();
                 // Проверка расположения тега value (должен быть внутри nominals)
                 if (!insideNominals)
                 {
@@ -182,6 +186,14 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
     if (!nominalsFound)
     {
         errors.insert(Error(missingTag, "nominals", xml.lineNumber()));
+    }
+    // Проверить количество номиналов
+    // Если количество номиналов превышает максимально допустимое
+    if (totalValueTagsCount > 100)
+    {
+        // Записать ошибку nominalsCountExceedsMax
+        // Номер строки = строка последнего <value> тега
+        errors.insert(Error(nominalsCountExceedsMax, QString::number(totalValueTagsCount), lastValueLineNumber));
     }
 
     // Если errors не пуст – вернуть false
