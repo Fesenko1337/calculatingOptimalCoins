@@ -26,7 +26,7 @@ bool readInputFile(const QString& filePath, QString& fileContent, QSet<Error>& e
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         // Если файл не удалось открыть
-        // Записать ошибку inputFileNotFound в errors
+        // Записать ошибку inputFileNotAccessible в errors
         errors.insert(Error(inputFileNotAccessible, "", -1, filePath));
         // Вернуть false
         return false;
