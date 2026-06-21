@@ -1,5 +1,5 @@
 #include "coinSolver.h"
-
+#include <algorithm>
 
 
 
