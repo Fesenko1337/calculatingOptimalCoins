@@ -3,6 +3,12 @@
 #include <QSet>
 #include "error.h"
 
+// Имена XML-тегов, используемых в программе
+const QString TAG_CONFIG = "config";
+const QString TAG_SUM = "sum";
+const QString TAG_NOMINALS = "nominals";
+const QString TAG_VALUE = "value";
+
 bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<int>& nominals, QSet<Error>& errors)
 {
     purchaseSum = 0;
@@ -44,11 +50,11 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
             QString tagName = xml.name().toString().trimmed().toLower();
 
             // Проверить структуру XML и наличие обязательных тегов
-            if (tagName == "config")
+            if (tagName == TAG_CONFIG)
             {
                 configFound = true; // Обнаружен корневой тег <config>
             }
-            else if (tagName == "sum")
+            else if (tagName == TAG_SUM)
             {
                 // Проверка расположения тега sum (должен быть внутри config)
                 if (!configFound)
@@ -94,7 +100,7 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
                     }
                 }
             }
-            else if (tagName == "nominals")
+            else if (tagName == TAG_NOMINALS)
             {
                 // Проверка расположения тега nominals (должен быть внутри config)
                 if (!configFound)
@@ -108,7 +114,7 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
                     insideNominals = true;
                 }
             }
-            else if (tagName == "value")
+            else if (tagName == TAG_VALUE)
             {
                 totalValueTagsCount++;
                 lastValueLineNumber = xml.lineNumber();
@@ -168,7 +174,7 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
         else if (xml.isEndElement())
         {
             QString tagName = xml.name().toString().toLower();
-            if (tagName == "nominals")
+            if (tagName == TAG_NOMINALS)
             {
                 insideNominals = false;
             }
