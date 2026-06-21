@@ -377,6 +377,7 @@ private slots:
  */
 void Test_reconstructCoinCombination::testReconstructCoinCombination_data()
 {
+    // Определение столбцов тестовых данных
     QTest::addColumn<int>("optimalPayment"); // Оптимальная сумма оплаты (входной параметр)
     QTest::addColumn<IntVector>("lastUsedCoin"); // Таблица последних использованных номиналов (входной параметр)
     QTest::addColumn<IntIntMap>("expectedUsedCoins"); // Ожидаемое количество монет каждого номинала (выходной параметр)
@@ -526,6 +527,250 @@ void Test_reconstructCoinCombination::testReconstructCoinCombination()
 
 
 
+/**
+ * @brief Класс тестов для функции calculateOptimalCoins.
+ * Наследуется от QObject и использует фреймворк Qt Test для модульного тестирования.
+ * Содержит data-функцию для предоставления тестовых данных и тестовую функцию для проверки.
+ * Тестирует полную цепочку вычислений: от входных данных до финального результата.
+ */
+class Test_calculateOptimalCoins : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void testCalculateOptimalCoins_data(); // Data-функция - предоставляет набор тестовых данных
+    void testCalculateOptimalCoins(); // Тестовая функция - выполняется для каждой строки данных
+};
+
+
+
+/**
+ * @brief Data-функция для тестирования calculateOptimalCoins.
+ * Определяет столбцы тестовых данных и добавляет строки с тестовыми случаями.
+ * Каждая строка (newRow) будет протестирована отдельно в тестовой функции.
+ */
+void Test_calculateOptimalCoins::testCalculateOptimalCoins_data()
+{
+    // Определение столбцов тестовых данных
+    QTest::addColumn<int>("purchaseSum"); // Сумма покупки (входной параметр)
+    QTest::addColumn<IntVector>("nominals"); // Номиналы монет (входной параметр)
+    QTest::addColumn<int>("expectedChange"); // Ожидаемая сдача (выходной параметр)
+    QTest::addColumn<IntIntMap>("expectedUsedCoins"); // Ожидаемое количество монет каждого номинала (выходной параметр)
+
+    // Тест 1: Типовой пример
+    {
+        IntIntMap expected;
+        expected[6] = 3;
+        expected[3] = 1;
+        QTest::newRow("Test 1: Typical example (sum=20, nom=[3,6])")
+            << 20 // purchaseSum
+            << (IntVector() << 3 << 6) // nominals
+            << 1 // expectedChange (21 - 20 = 1)
+            << expected; // expectedUsedCoins
+    }
+
+    // Тест 2: Точная оплата
+    {
+        IntIntMap expected;
+        expected[5] = 2;
+        QTest::newRow("Test 2: Accurate payment (sum=10, nom=[2,5])")
+            << 10
+            << (IntVector() << 2 << 5)
+            << 0
+            << expected;
+    }
+
+    // Тест 3: Оплата со сдачей
+    {
+        IntIntMap expected;
+        expected[3] = 1;
+        expected[5] = 1;
+        QTest::newRow("Test 3: Payment with change (sum=7, nom=[3,5])")
+            << 7
+            << (IntVector() << 3 << 5)
+            << 1
+            << expected;
+    }
+
+    // Тест 4: Граничный минимум
+    {
+        IntIntMap expected;
+        expected[1] = 1;
+        QTest::newRow("Test 4: Boundary Minimum (sum=1, nom=[1])")
+            << 1
+            << (IntVector() << 1)
+            << 0
+            << expected;
+    }
+
+    // Тест 5: Граничный максимум
+    {
+        IntIntMap expected;
+        expected[100] = 10;
+        QTest::newRow("Test 5: Boundary Maximum (sum=1000, nom=[100])")
+            << 1000
+            << (IntVector() << 100)
+            << 0
+            << expected;
+    }
+
+    // Тест 6: Номинал больше суммы покупки
+    {
+        IntIntMap expected;
+        expected[5] = 1;
+        QTest::newRow("Test 6: The nominal value is more than the purchase amount (sum=4, nom=[5])")
+            << 4
+            << (IntVector() << 5)
+            << 1
+            << expected;
+    }
+
+    // Тест 7: Одна крупная монета
+    {
+        IntIntMap expected;
+        expected[50] = 1;
+        QTest::newRow("Test 7: One large coin (sum=1, nom=[50])")
+            << 1
+            << (IntVector() << 50)
+            << 49
+            << expected;
+    }
+
+    // Тест 8: Предпочтение одной крупной монеты нескольким меньшим
+    {
+        IntIntMap expected;
+        expected[10] = 1;
+        QTest::newRow("Test 8: Preference for one large coin (sum=10, nom=[1,9,10])")
+            << 10
+            << (IntVector() << 1 << 9 << 10)
+            << 0
+            << expected;
+    }
+
+    // Тест 9: Преимущество над жадным алгоритмом
+    {
+        IntIntMap expected;
+        expected[3] = 2;
+        QTest::newRow("Test 9: The advantage over the greedy algorithm (sum=6, nom=[1,3,4])")
+            << 6
+            << (IntVector() << 1 << 3 << 4)
+            << 0
+            << expected;
+    }
+
+    // Тест 10: Несколько равносильных решений
+    {
+        IntIntMap expected;
+        expected[1] = 1;
+        expected[3] = 1;
+        QTest::newRow("Test 10: Several equivalent solutions (sum=4, nom=[1,2,3])")
+            << 4
+            << (IntVector() << 1 << 2 << 3)
+            << 0
+            << expected;
+    }
+
+    // Тест 11: Плотный набор номиналов
+    {
+        IntIntMap expected;
+        expected[25] = 2;
+        QTest::newRow("Test 11: A dense set of denominations (sum=50, nom=[1,2,5,10,20,25])")
+            << 50
+            << (IntVector() << 1 << 2 << 5 << 10 << 20 << 25)
+            << 0
+            << expected;
+    }
+
+    // Тест 12: Только номинал 1
+    {
+        IntIntMap expected;
+        expected[1] = 50;
+        QTest::newRow("Test 12: Only the nominal value of 1 (sum=50, nom=[1])")
+            << 50
+            << (IntVector() << 1)
+            << 0
+            << expected;
+    }
+
+    // Тест 13: Приоритет меньшей сдачи при равном количестве монет
+    {
+        IntIntMap expected;
+        expected[6] = 2;
+        QTest::newRow("Test 13: The priority of a lower pass (sum=10, nom=[6,9])")
+            << 10
+            << (IntVector() << 6 << 9)
+            << 2
+            << expected;
+    }
+
+    // Тест 14: Нулевая сдача при нескольких вариантах
+    {
+        IntIntMap expected;
+        expected[21] = 2;
+        QTest::newRow("Test 14: Zero change for multiple solutions (sum=42, nom=[7,14,21])")
+            << 42
+            << (IntVector() << 7 << 14 << 21)
+            << 0
+            << expected;
+    }
+
+    // Тест 15: Все номиналы больше суммы покупки
+    {
+        IntIntMap expected;
+        expected[25] = 1;
+        QTest::newRow("Test 15: All denominations are greater than the purchase amount (sum=10, nom=[25,50,100])")
+            << 10
+            << (IntVector() << 25 << 50 << 100)
+            << 15
+            << expected;
+    }
+}
+
+
+
+/**
+ * @brief Тестовая функция для проверки calculateOptimalCoins.
+ * Выполняется для каждой строки данных из testCalculateOptimalCoins_data().
+ * Извлекает тестовые данные с помощью QFETCH и сравнивает результаты с ожидаемыми значениями через QCOMPARE.
+ */
+void Test_calculateOptimalCoins::testCalculateOptimalCoins()
+{
+    // QFETCH извлекает значения из текущей строки тестовых данных
+    QFETCH(int, purchaseSum);
+    QFETCH(IntVector, nominals);
+    QFETCH(int, expectedChange);
+    QFETCH(IntIntMap, expectedUsedCoins);
+
+    // Выходные параметры для тестируемой функции
+    int change = 0;
+    QMap<int, int> usedCoins;
+    // Вызов тестируемой функции
+    calculateOptimalCoins(purchaseSum, nominals, change, usedCoins);
+
+    // QCOMPARE сравнивает фактическую сдачу с ожидаемой
+    QCOMPARE(change, expectedChange);
+
+    // QCOMPARE сравнивает размер словаря
+    QCOMPARE(usedCoins.size(), expectedUsedCoins.size());
+
+    // Проверяем каждый номинал
+    for (auto it = expectedUsedCoins.constBegin(); it != expectedUsedCoins.constEnd(); ++it) {
+        // QVERIFY2 проверяет наличие номинала в результате
+        QVERIFY2(usedCoins.contains(it.key()),
+                 qPrintable(QString("Номинал %1 не найден в результате").arg(it.key())));
+        // QCOMPARE сравнивает количество монет данного номинала
+        QCOMPARE(usedCoins[it.key()], it.value());
+    }
+
+    int totalSum = 0;
+    for (auto it = usedCoins.constBegin(); it != usedCoins.constEnd(); ++it) {
+        totalSum += it.value();
+    }
+    // QCOMPARE проверяет, что общая сумма монет равна purchaseSum + change
+    QCOMPARE(totalSum, purchaseSum + change);
+}
+
+
 
 // Запуск всех тестов
 int main(int argc, char *argv[])
@@ -540,9 +785,14 @@ int main(int argc, char *argv[])
         status |= QTest::qExec(&test2, argc, argv);
     }
     {
-         Test_reconstructCoinCombination test3;
-         status |= QTest::qExec(&test3, argc, argv);
-     }
+        Test_reconstructCoinCombination test3;
+        status |= QTest::qExec(&test3, argc, argv);
+    }
+    {
+        Test_calculateOptimalCoins test4;
+        status |= QTest::qExec(&test4, argc, argv);
+    }
+
 
     return status;
 }
