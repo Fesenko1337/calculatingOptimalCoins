@@ -183,15 +183,15 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
     // Проверка наличия обязательных тегов
     if (!configFound)
     {
-        errors.insert(Error(missingTag, "config", xml.lineNumber()));
+        errors.insert(Error(missingTag, TAG_CONFIG, xml.lineNumber()));
     }
     if (!sumFound)
     {
-        errors.insert(Error(missingTag, "sum", xml.lineNumber()));
+        errors.insert(Error(missingTag, TAG_SUM, xml.lineNumber()));
     }
     if (!nominalsFound)
     {
-        errors.insert(Error(missingTag, "nominals", xml.lineNumber()));
+        errors.insert(Error(missingTag, TAG_NOMINALS, xml.lineNumber()));
     }
     // Проверить количество номиналов
     // Если количество номиналов превышает максимально допустимое
