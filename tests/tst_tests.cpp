@@ -181,7 +181,190 @@ void Test_fillReachabilityTable::testFillReachabilityTable()
     }
 }
 
-QTEST_MAIN(Test_fillReachabilityTable)
+
+
+
+/**
+ * @brief Класс тестов для функции findOptimalPayment.
+ * Наследуется от QObject и использует фреймворк Qt Test для модульного тестирования.
+ * Содержит data-функцию для предоставления тестовых данных и тестовую функцию для проверки.
+ */
+class Test_findOptimalPayment : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void testFindOptimalPayment_data(); // Data-функция - предоставляет набор тестовых данных
+    void testFindOptimalPayment(); // Тестовая функция - выполняется для каждой строки данных
+};
+
+
+
+/**
+ * @brief Data-функция для тестирования findOptimalPayment.
+ * Определяет столбцы тестовых данных и добавляет строки с тестовыми случаями.
+ * Каждая строка (newRow) будет протестирована отдельно в тестовой функции.
+ */
+void Test_findOptimalPayment::testFindOptimalPayment_data()
+{
+    // Определение столбцов тестовых данных
+    QTest::addColumn<int>("purchaseSum"); // Сумма покупки (входной параметр)
+    QTest::addColumn<int>("maxSearchLimit"); // Максимальный предел поиска (входной параметр)
+    QTest::addColumn<IntVector>("minCoins"); // Таблица минимального количества монет (входной параметр)
+    QTest::addColumn<int>("expectedOptimalPayment"); // Ожидаемая оптимальная сумма оплаты (выходной параметр)
+    QTest::addColumn<int>("expectedChange"); // Ожидаемая сдача (выходной параметр)
+
+    // Тест 1: Базовый случай
+    QTest::newRow("Test 1: Base case (two denominations, the exact amount is achievable) (sum=5)")
+        << 5 // purchaseSum
+        << 8 // maxSearchLimit
+        << (IntVector() << 0 << -1 << 1 << 1 << 2 << 2 << 2 << 3 << 3) // minCoins
+        << 5 // expectedOptimalPayment
+        << 0; // expectedChange
+
+    // Тест 2: Один номинал, сумма кратна номиналу
+    QTest::newRow("Test 2: One nominal value, the amount is a multiple of the nominal value (sum=10)")
+        << 10
+        << 15
+        << (IntVector() << 0 << -1 << -1 << -1 << -1 << 1 << -1 << -1 << -1 << -1 << 2 << -1 << -1 << -1 << -1 << 3)
+        << 10
+        << 0;
+
+    // Тест 3: Сумма покупки недостижима (требуется поиск сдачи)
+    QTest::newRow("Test 3: The purchase amount is unattainable (requires a change search) (sum=7)")
+        << 7
+        << 12
+        << (IntVector() << 0 << -1 << -1 << -1 << -1 << 1 << -1 << -1 << -1 << -1 << 2 << -1 << -1)
+        << 10
+        << 3;
+
+    // Тест 4: Граничные значения (минимальные допустимые)
+    QTest::newRow("Test 4: Boundary values (minimum allowable) (sum=1)")
+        << 1
+        << 2
+        << (IntVector() << 0 << 1 << 2)
+        << 1
+        << 0;
+
+    // Тест 5: Демонстрация преимущества ДП над жадным алгоритмом
+    QTest::newRow("Test 5: Demonstrating the advantages of DP over a greedy algorithm (sum=6)")
+        << 6
+        << 10
+        << (IntVector() << 0 << 1 << 2 << 1 << 1 << 2 << 2 << 2 << 2 << 3 << 4)
+        << 6
+        << 0;
+
+    // Тест 7: Много номиналов
+    // Генерируем массив программно
+    {
+        int purchaseSum = 100;
+        int maxSearchLimit = 150;
+        IntVector minCoins(maxSearchLimit + 1, -1);
+        minCoins[0] = 0;
+        minCoins[1] = 1;
+        minCoins[2] = 1;
+        minCoins[50] = 1;
+        minCoins[100] = 2;
+        minCoins[150] = 3;
+        // Остальные значения заполним циклом (все достижимы, так как есть номинал 1)
+        for (int i = 3; i <= 150; ++i) {
+            if (minCoins[i] == -1) {
+                minCoins[i] = minCoins[i - 1] + 1;
+            }
+        }
+
+        QTest::newRow("Test 7: Multiple coin denominations (sum=100)")
+            << purchaseSum
+            << maxSearchLimit
+            << minCoins
+            << 100
+            << 0;
+    }
+
+    // Тест 8: Номинал превышает сумму покупки
+    QTest::newRow("Test 8: The nominal value exceeds the purchase amount (sum=3)")
+        << 3
+        << 13
+        << (IntVector() << 0 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << 1 << -1 << -1 << -1)
+        << 10
+        << 7;
+
+    // Тест 9: Одна крупная монета
+    QTest::newRow("Test 9: One large coin (sum=1)")
+        << 1
+        << 51
+        << (IntVector() << 0 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                      << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                      << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                      << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                      << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                      << 1 << -1)
+        << 50
+        << 49;
+
+    // Тест 10: Только номинал 1
+    QTest::newRow("Test 10: Only the nominal value is 1 (sum=50)")
+        << 50
+        << 51
+        << (IntVector() << 0 << 1 << 2 << 3 << 4 << 5 << 6 << 7 << 8 << 9 << 10
+                      << 11 << 12 << 13 << 14 << 15 << 16 << 17 << 18 << 19 << 20
+                      << 21 << 22 << 23 << 24 << 25 << 26 << 27 << 28 << 29 << 30
+                      << 31 << 32 << 33 << 34 << 35 << 36 << 37 << 38 << 39 << 40
+                      << 41 << 42 << 43 << 44 << 45 << 46 << 47 << 48 << 49 << 50 << 51)
+        << 50
+        << 0;
+}
+
+
+
+/**
+ * @brief Тестовая функция для проверки findOptimalPayment.
+ * Выполняется для каждой строки данных из testFindOptimalPayment_data().
+ * Извлекает тестовые данные с помощью QFETCH и сравнивает результаты с ожидаемыми значениями через QCOMPARE.
+ */
+void Test_findOptimalPayment::testFindOptimalPayment()
+{
+    // QFETCH извлекает значения из текущей строки тестовых данных
+    QFETCH(int, purchaseSum);
+    QFETCH(int, maxSearchLimit);
+    QFETCH(IntVector, minCoins);
+    QFETCH(int, expectedOptimalPayment);
+    QFETCH(int, expectedChange);
+
+    // Выходные параметры для тестируемой функции
+    int optimalPayment = 0;
+    int change = 0;
+    // Вызов тестируемой функции
+    findOptimalPayment(purchaseSum, maxSearchLimit, minCoins, optimalPayment, change);
+
+    // QCOMPARE сравнивает фактическое значение с ожидаемым
+    QCOMPARE(optimalPayment, expectedOptimalPayment);
+    QCOMPARE(change, expectedChange);
+
+    // Дополнительные проверки
+    QVERIFY2(optimalPayment >= purchaseSum && optimalPayment <= maxSearchLimit,
+             qPrintable(QString("optimalPayment=%1 вне диапазона [%2, %3]")
+                        .arg(optimalPayment).arg(purchaseSum).arg(maxSearchLimit)));
+    QVERIFY2(change >= 0, "Сдача не может быть отрицательной");
+    QCOMPARE(change, optimalPayment - purchaseSum);
+}
+
+// Запуск всех тестов
+int main(int argc, char *argv[])
+{
+    int status = 0;
+    {
+        Test_fillReachabilityTable test1;
+        status |= QTest::qExec(&test1, argc, argv);
+    }
+    {
+        Test_findOptimalPayment test2;
+        status |= QTest::qExec(&test2, argc, argv);
+    }
+
+    return status;
+}
+
 #include "tst_tests.moc"
 
 
