@@ -121,13 +121,13 @@ QString Error::generateErrorMessage() const
             break;
 
         case incorrectTagLocation:
-            if (invalidValue == "value")
+            if (invalidValue == TAG_VALUE)
             {
                 message = QString("Ошибка. Некорректное местоположение тега: \"%1\". "
                                   "Тег \"%1\" должен находиться внутри тега \"nominals\".")
                                   .arg(invalidValue);
             }
-            else if (invalidValue == "sum" || invalidValue == "nominals")
+            else if (invalidValue == TAG_SUM || invalidValue == TAG_NOMINALS)
             {
                 message = QString("Ошибка. Некорректное местоположение тега: \"%1\". "
                                   "Тег \"%1\" должен находиться внутри тега \"config\".")

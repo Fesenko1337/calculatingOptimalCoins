@@ -3,11 +3,6 @@
 #include <QSet>
 #include "error.h"
 
-// Имена XML-тегов, используемых в программе
-const QString TAG_CONFIG = "config";
-const QString TAG_SUM = "sum";
-const QString TAG_NOMINALS = "nominals";
-const QString TAG_VALUE = "value";
 
 bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<int>& nominals, QSet<Error>& errors)
 {

@@ -3,6 +3,12 @@
 
 #include <QString>
 
+// Имена XML-тегов, используемых в программе
+static const QString TAG_CONFIG = "config";
+static const QString TAG_SUM = "sum";
+static const QString TAG_NOMINALS = "nominals";
+static const QString TAG_VALUE = "value";
+
 /**
  * @brief
  * Перечисление возможных типов ошибок в программе.
@@ -63,12 +69,11 @@ public:
      */
     Error(errorType errorType, const QString& invalidValue = "",
           int lineNumber = -1, const QString& fileName = "");
-
     /**
      * @brief
-     * Оператор сравнения на равенство.
-     * @param other - сравниваемая ошибка.
-     * @return true - ошибки равны, false - ошибки различны.
+     * Оператор сравнения двух объектов Error.
+     * @param other - другой объект Error для сравнения.
+     * @return true, если оба объекта идентичны (совпадают тип, некорректное значение, номер строки и имя файла), иначе false.
      */
     bool operator==(const Error& other) const;
 
@@ -79,6 +84,8 @@ public:
      */
     QString generateErrorMessage() const;
 };
+
+
 
 /**
  * @brief
