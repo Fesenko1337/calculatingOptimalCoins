@@ -2,7 +2,7 @@
 #include <QXmlStreamReader>
 #include <QSet>
 #include "error.h"
-
+#include <algorithm>
 
 bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<int>& nominals, QSet<Error>& errors)
 {
@@ -202,6 +202,8 @@ bool parseAndValidateData(const QString& fileContent, int& purchaseSum, QVector<
     {
         return false;
     }
+    // Отсортировать номиналы по возрастанию
+    std::sort(nominals.begin(), nominals.end());
     // Иначе вернуть true
     return true;
 }
