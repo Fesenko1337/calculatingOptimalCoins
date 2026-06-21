@@ -8,6 +8,8 @@
 
 typedef QVector<int> IntVector;
 Q_DECLARE_METATYPE(IntVector) // Регистрация типа QVector<int> для использования в тестах
+typedef QMap<int, int> IntIntMap;
+Q_DECLARE_METATYPE(IntIntMap) // Регистрация типа QMap<int,int> для использования в тестах
 
 
 
@@ -349,6 +351,182 @@ void Test_findOptimalPayment::testFindOptimalPayment()
     QCOMPARE(change, optimalPayment - purchaseSum);
 }
 
+
+
+
+/**
+ * @brief Класс тестов для функции reconstructCoinCombination.
+ * Наследуется от QObject и использует фреймворк Qt Test для модульного тестирования.
+ * Содержит data-функцию для предоставления тестовых данных и тестовую функцию для проверки.
+ */
+class Test_reconstructCoinCombination : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void testReconstructCoinCombination_data(); // Data-функция - предоставляет набор тестовых данных
+    void testReconstructCoinCombination(); // Тестовая функция - выполняется для каждой строки данных
+};
+
+
+
+/**
+ * @brief Data-функция для тестирования reconstructCoinCombination.
+ * Определяет столбцы тестовых данных и добавляет строки с тестовыми случаями.
+ * Каждая строка (newRow) будет протестирована отдельно в тестовой функции.
+ */
+void Test_reconstructCoinCombination::testReconstructCoinCombination_data()
+{
+    QTest::addColumn<int>("optimalPayment"); // Оптимальная сумма оплаты (входной параметр)
+    QTest::addColumn<IntVector>("lastUsedCoin"); // Таблица последних использованных номиналов (входной параметр)
+    QTest::addColumn<IntIntMap>("expectedUsedCoins"); // Ожидаемое количество монет каждого номинала (выходной параметр)
+
+    // Тест 1: Базовый случай
+    {
+        IntIntMap expected;
+        expected[2] = 1;
+        expected[3] = 1;
+        QTest::newRow("Test 1: Base case (two denominations, the exact amount is achievable) (payment=5)")
+            << 5 // optimalPayment
+            << (IntVector() << -1 << -1 << 2 << 3 << 2 << 2 << 3 << 2 << 2) // lastUsedCoin
+            << expected; // expectedUsedCoins
+    }
+
+    // Тест 2: Один номинал, сумма кратна номиналу
+    {
+        IntIntMap expected;
+        expected[5] = 2;
+        QTest::newRow("Test 2: One nominal value, the amount is a multiple of the nominal value (payment=10)")
+            << 10
+            << (IntVector() << -1 << -1 << -1 << -1 << -1 << 5 << -1 << -1 << -1 << -1 << 5 << -1 << -1 << -1 << -1 << 5)
+            << expected;
+    }
+
+    // Тест 3: Сумма покупки недостижима (требуется поиск сдачи)
+    {
+        IntIntMap expected;
+        expected[5] = 2;
+        QTest::newRow("Test 3: The purchase amount is unattainable (requires a change search) (payment=10)")
+            << 10
+            << (IntVector() << -1 << -1 << -1 << -1 << -1 << 5 << -1 << -1 << -1 << -1 << 5 << -1 << -1)
+            << expected;
+    }
+
+    // Тест 4: Граничные значения (минимальные допустимые)
+    {
+        IntIntMap expected;
+        expected[1] = 1;
+        QTest::newRow("Test 4: Boundary values (minimum allowable) (payment=1)")
+            << 1
+            << (IntVector() << -1 << 1 << 1)
+            << expected;
+    }
+
+    // Тест 5: Демонстрация преимущества ДП над жадным алгоритмом
+    {
+        IntIntMap expected;
+        expected[3] = 2;
+        QTest::newRow("Test 5: Demonstrating the advantages of DP over a greedy algorithm (payment=6)")
+            << 6
+            << (IntVector() << -1 << 1 << 1 << 3 << 4 << 1 << 3 << 3 << 4 << 1 << 3)
+            << expected;
+    }
+
+    // Тест 7: Много номиналов
+    {
+        int optimalPayment = 100;
+        int arraySize = 151;
+        IntVector lastUsedCoin(arraySize, 1); // Заполняем номиналом 1
+        lastUsedCoin[0] = -1;
+        lastUsedCoin[50] = 50;
+        lastUsedCoin[100] = 50;
+
+        IntIntMap expected;
+        expected[50] = 2;
+
+        QTest::newRow("Test 7: Multiple coin denominations (payment=100)")
+            << optimalPayment
+            << lastUsedCoin
+            << expected;
+    }
+
+    // Тест 8: Номинал превышает сумму покупки
+    {
+        IntIntMap expected;
+        expected[10] = 1;
+        QTest::newRow("Test 8: The nominal value exceeds the purchase amount (payment=10)")
+            << 10
+            << (IntVector() << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << 10 << -1 << -1 << -1)
+            << expected;
+    }
+
+    // Тест 9: Одна крупная монета
+    {
+        IntIntMap expected;
+        expected[50] = 1;
+        QTest::newRow("Test 9: One large coin (payment=50)")
+            << 50
+            << (IntVector() << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                          << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                          << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                          << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                          << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1 << -1
+                          << 50 << -1)
+            << expected;
+    }
+
+    // Тест 10: Только номинал 1
+    {
+        IntIntMap expected;
+        expected[1] = 50;
+        QTest::newRow("Test 10: Only the nominal value is 1 (payment=50)")
+            << 50
+            << (IntVector() << -1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1
+                          << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1
+                          << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1
+                          << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1
+                          << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1 << 1
+                          << 1 << 1)
+            << expected;
+    }
+}
+
+
+
+/**
+ * @brief Тестовая функция для проверки reconstructCoinCombination.
+ * Выполняется для каждой строки данных из testReconstructCoinCombination_data().
+ * Извлекает тестовые данные с помощью QFETCH и сравнивает результаты с ожидаемыми значениями через QCOMPARE.
+ */
+void Test_reconstructCoinCombination::testReconstructCoinCombination()
+{
+    // QFETCH извлекает значения из текущей строки тестовых данных
+    QFETCH(int, optimalPayment);
+    QFETCH(IntVector, lastUsedCoin);
+    QFETCH(IntIntMap, expectedUsedCoins);
+
+    // Выходной параметр для тестируемой функции
+    QMap<int, int> usedCoins;
+    // Вызов тестируемой функции
+    reconstructCoinCombination(optimalPayment, lastUsedCoin, usedCoins);
+
+    // QCOMPARE сравнивает размер словаря
+    QCOMPARE(usedCoins.size(), expectedUsedCoins.size());
+
+    // Проверяем каждый номинал
+    for (auto it = expectedUsedCoins.constBegin(); it != expectedUsedCoins.constEnd(); ++it) {
+        // QVERIFY2 проверяет наличие номинала в результате
+        QVERIFY2(usedCoins.contains(it.key()),
+                 qPrintable(QString("Номинал %1 не найден в результате").arg(it.key())));
+        // QCOMPARE сравнивает количество монет данного номинала
+        QCOMPARE(usedCoins[it.key()], it.value());
+    }
+}
+
+
+
+
+
 // Запуск всех тестов
 int main(int argc, char *argv[])
 {
@@ -361,6 +539,10 @@ int main(int argc, char *argv[])
         Test_findOptimalPayment test2;
         status |= QTest::qExec(&test2, argc, argv);
     }
+    {
+         Test_reconstructCoinCombination test3;
+         status |= QTest::qExec(&test3, argc, argv);
+     }
 
     return status;
 }
