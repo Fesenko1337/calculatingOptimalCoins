@@ -10,7 +10,7 @@ typedef QVector<int> IntVector;
 Q_DECLARE_METATYPE(IntVector) // Регистрация типа QVector<int> для использования в тестах
 typedef QMap<int, int> IntIntMap;
 Q_DECLARE_METATYPE(IntIntMap) // Регистрация типа QMap<int,int> для использования в тестах
-
+Q_DECLARE_METATYPE(errorType) // Регистрация перечисления errorType для использования в тестах
 
 
 /**
@@ -772,7 +772,391 @@ void Test_calculateOptimalCoins::testCalculateOptimalCoins()
 
 
 
-// Запуск всех тестов
+
+/**
+ * @brief Вспомогательная функция для проверки наличия конкретной ошибки в множестве.
+ * Ищет в множестве ошибок ошибку с указанным типом, номером строки и значением.
+ * Для номера строки допускается погрешность ±1 из-за особенностей QXmlStreamReader.
+ * @param errors - множество ошибок для поиска.
+ * @param type - тип искомой ошибки.
+ * @param line - ожидаемый номер строки (-1, если не проверяем).
+ * @param value - ожидаемое некорректное значение ("" если не проверяем).
+ * @return true, если ошибка найдена, иначе false.
+ */
+bool hasError(const QSet<Error>& errors, errorType type, int line = -1, const QString& value = "")
+{
+    for (const Error& err : errors) {
+        if (err.type == type) {
+            // Проверяем номер строки только если он указан и не равен -1
+            // Допускаем погрешность ±1 из-за особенностей QXmlStreamReader
+            if (line != -1 && qAbs(err.lineNumber - line) > 1) continue;
+
+            // Проверяем значение только если оно не пустое
+            if (!value.isEmpty() && err.invalidValue != value) continue;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+/**
+ * @brief Класс тестов для функции parseAndValidateData.
+ * Наследуется от QObject и использует фреймворк Qt Test для модульного тестирования.
+ * Содержит data-функцию для предоставления тестовых данных и тестовую функцию для проверки.
+ * Также содержит отдельные методы для тестов с несколькими ошибками, которые не помещаются
+ * в стандартную data-driven структуру QTest.
+ */
+class Test_parseAndValidateData : public QObject
+{
+    Q_OBJECT
+
+private slots:
+    void testParseAndValidateData_data(); // Data-функция - предоставляет набор тестовых данных для одиночных ошибок
+    void testParseAndValidateData(); // Тестовая функция - выполняется для каждой строки данных
+
+    // Отдельные методы для тестов с несколькими ошибками
+    void testParseAndValidateData_Test11(); // Тест 11: Номиналы монет не являются целыми числами (2 ошибки)
+    void testParseAndValidateData_Test12(); // Тест 12: Номиналы монет меньше минимально допустимого (2 ошибки)
+    void testParseAndValidateData_Test14(); // Тест 14: Количество номиналов больше максимума (2 ошибки)
+    void testParseAndValidateData_Test23(); // Тест 23: Смешанные валидные и некорректные номиналы (2 ошибки)
+    void testParseAndValidateData_Test24(); // Тест 24: Комбинация ошибок данных сумма + номиналы (3 ошибки)
+    void testParseAndValidateData_Test25(); // Тест 25: Логические ошибки номиналов дубликат + диапазон (2 ошибки)
+    void testParseAndValidateData_Test26(); // Тест 26: Комбинация структурных и ошибок номиналов (3 ошибки)
+};
+
+
+
+/**
+ * @brief Data-функция для тестирования parseAndValidateData.
+ * Определяет столбцы тестовых данных и добавляет строки с тестовыми случаями.
+ * Каждая строка (newRow) будет протестирована отдельно в тестовой функции.
+ * Тесты охватывают валидные данные, одиночные ошибки валидации и структурные ошибки XML.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_data()
+{
+    QTest::addColumn<QString>("xmlContent"); // Содержимое XML-файла (входной параметр)
+    QTest::addColumn<bool>("expectedResult"); // Ожидаемый результат парсинга (true - успешно, false - ошибка)
+    QTest::addColumn<int>("expectedPurchaseSum"); // Ожидаемая сумма покупки (проверяется только при успехе)
+    QTest::addColumn<IntVector>("expectedNominals"); // Ожидаемые номиналы монет (проверяются только при успехе)
+    QTest::addColumn<int>("expectedErrorCount"); // Ожидаемое количество ошибок
+    QTest::addColumn<errorType>("expectedErrorType"); // Ожидаемый тип первой ошибки (noError если нет ошибок)
+    QTest::addColumn<int>("expectedErrorLine"); // Ожидаемый номер строки ошибки (-1 если не проверяем)
+    QTest::addColumn<QString>("expectedErrorValue"); // Ожидаемое некорректное значение ("" если не проверяем)
+
+    // Тест 1: Валидные данные: базовый случай
+    QTest::newRow("Test 1: Valid data: the base case")
+        << QString("<config>\n<sum>10</sum>\n<nominals>\n<value>2</value>\n<value>5</value>\n</nominals>\n</config>")
+        << true << 10 << (IntVector() << 2 << 5) << 0 << noError << -1 << QString("");
+
+    // Тест 2: Валидные данные: граничные значения
+    QTest::newRow("Test 2: Valid data: boundary values (minimum)")
+        << QString("<config>\n<sum>1</sum>\n<nominals>\n<value>1</value>\n</nominals>\n</config>")
+        << true << 1 << (IntVector() << 1) << 0 << noError << -1 << QString("");
+
+    // Тест 3: Валидные данные: граничные значения
+    QTest::newRow("Test 3: Valid data: boundary values (maximum)")
+        << QString("<config>\n<sum>1000</sum>\n<nominals>\n<value>100</value>\n</nominals>\n</config>")
+        << true << 1000 << (IntVector() << 100) << 0 << noError << -1 << QString("");
+
+    // Тест 4: Валидные данные: несколько номиналов
+    QTest::newRow("Test 4: Valid data: multiple denominations")
+        << QString("<config>\n<sum>100</sum>\n<nominals>\n<value>10</value>\n<value>20</value>\n<value>50</value>\n<value>70</value>\n<value>100</value>\n</nominals>\n</config>")
+        << true << 100 << (IntVector() << 10 << 20 << 50 << 70 << 100) << 0 << noError << -1 << QString("");
+
+    // Тест 5: Валидные данные: номинал больше суммы покупки
+    QTest::newRow("Test 5: Valid data: the nominal value is more than the purchase amount")
+        << QString("<config>\n<sum>1</sum>\n<nominals>\n<value>50</value>\n</nominals>\n</config>")
+        << true << 1 << (IntVector() << 50) << 0 << noError << -1 << QString("");
+
+    // Тест 6: Сумма покупки больше максимально допустимой
+    QTest::newRow("Test 6: The purchase amount is more than the maximum allowed")
+        << QString("<config>\n<sum>15000</sum>\n<nominals>\n<value>1</value>\n<value>7</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << purchaseSumExceedsMax << 2 << QString("15000");
+
+    // Тест 7: Сумма покупки меньше минимально допустимой
+    QTest::newRow("Test 7: The purchase amount is less than the minimum allowed")
+        << QString("<config>\n<sum>-500</sum>\n<nominals>\n<value>19</value>\n<value>4</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << purchaseSumLessMin << 2 << QString("-500");
+
+    // Тест 8: Сумма покупки не является целым числом
+    QTest::newRow("Test 8: The purchase amount is not an integer")
+        << QString("<config>\n<sum>14.03</sum>\n<nominals>\n<value>3</value>\n<value>9</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << purchaseSumNotInteger << 2 << QString("14.03");
+
+    // Тест 9: Сумма покупки не является числом
+    QTest::newRow("Test 9: The purchase amount is not a number")
+        << QString("<config>\n<sum>A</sum>\n<nominals>\n<value>21</value>\n<value>5</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << purchaseSumNotNumber << 2 << QString("A");
+
+    // Тест 10: Номиналы монет не являются числами
+    QTest::newRow("Test 10: Coin denominations are not numbers")
+        << QString("<config>\n<sum>150</sum>\n<nominals>\n<value>$</value>\n<value>16</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << nominalNotNumber << 4 << QString("$");
+
+    // Тест 13: Номиналы монет повторяются
+    QTest::newRow("Test 13: Coin denominations are repeated")
+        << QString("<config>\n<sum>500</sum>\n<nominals>\n<value>5</value>\n<value>5</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << nominalDuplicate << 5 << QString("5");
+
+    // Тест 15: Номинал монеты превышает максимально допустимый
+    QTest::newRow("Test 15: The coin's face value exceeds the maximum allowed value")
+        << QString("<config>\n<sum>100</sum>\n<nominals>\n<value>10</value>\n<value>150</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << nominalExceedsMax << 5 << QString("150");
+
+    // Тест 16: Неопознанный тег
+    QTest::newRow("Test 16: Unknown tag")
+        << QString("<config>\n<rub>300</rub>\n<sum>935</sum>\n<nominals>\n<value>12</value>\n<value>210</value>\n<value>89</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 2 << unknownTag << 2 << QString("rub");
+
+    // Тест 17: Отсутствует обязательный тег
+    QTest::newRow("Test 17: Missing required tag")
+        << QString("<config>\n<nominals>\n<value>27</value>\n<value>90</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << missingTag << -1 << QString("sum");
+
+    // Тест 18: Некорректное расположение тега
+    QTest::newRow("Test 18: Incorrect tag location")
+        << QString("<config>\n<value>2</value>\n<sum>10</sum>\n<nominals>\n<value>1</value>\n<value>3</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << incorrectTagLocation << 2 << QString("value");
+
+    // Тест 19: Некорректный синтаксис XML
+    QTest::newRow("Test 19: Incorrect XML syntax")
+        << QString("<config\n<sum>670</sum>\n<nominals>\n<value>1</value>\n<value>2</value>\n<value>39</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << invalidXmlSyntax << 1 << QString("");
+
+    // Тест 20: Пустое содержимое тега суммы
+    QTest::newRow("Test 20: Empty amount tag content")
+        << QString("<config>\n<sum></sum>\n<nominals>\n<value>5</value>\n</nominals>\n</config>")
+        << false << 0 << IntVector() << 1 << purchaseSumNotNumber << 2 << QString("");
+
+    // Тест 21: Зависимость от регистра
+    QTest::newRow("Test 21: Case dependence")
+        << QString("<config>\n<SUM>10</SUM>\n<nominals>\n<value>5</value>\n</nominals>\n</config>")
+        << true << 10 << (IntVector() << 5) << 0 << noError << -1 << QString("");
+
+    // Тест 22: Пробелы и переносы строк
+    QTest::newRow("Test 22: Spaces and line breaks")
+        << QString("<config>\n <sum> 42 </sum>\n <nominals>\n <value> 5 </value>\n </nominals>\n</config>")
+        << true << 42 << (IntVector() << 5) << 0 << noError << -1 << QString("");
+}
+
+
+
+/**
+ * @brief Тестовая функция для проверки parseAndValidateData.
+ * Выполняется для каждой строки данных из testParseAndValidateData_data().
+ * Извлекает тестовые данные с помощью QFETCH и сравнивает результаты с ожидаемыми значениями через QCOMPARE.
+ */
+void Test_parseAndValidateData::testParseAndValidateData()
+{
+    // QFETCH извлекает значения из текущей строки тестовых данных
+    QFETCH(QString, xmlContent);
+    QFETCH(bool, expectedResult);
+    QFETCH(int, expectedPurchaseSum);
+    QFETCH(IntVector, expectedNominals);
+    QFETCH(int, expectedErrorCount);
+    QFETCH(errorType, expectedErrorType);
+    QFETCH(int, expectedErrorLine);
+    QFETCH(QString, expectedErrorValue);
+
+    // Выходные параметры для тестируемой функции
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+    // Вызов тестируемой функции
+    bool result = parseAndValidateData(xmlContent, purchaseSum, nominals, errors);
+    // QCOMPARE сравнивает фактический результат с ожидаемым
+    QCOMPARE(result, expectedResult);
+    // QCOMPARE сравнивает количество ошибок
+    QCOMPARE(errors.size(), expectedErrorCount);
+
+    // Если парсинг успешен - проверяем извлечённые данные
+    if (expectedResult) {
+        // QCOMPARE сравнивает сумму покупки
+        QCOMPARE(purchaseSum, expectedPurchaseSum);
+        // QCOMPARE сравнивает размер вектора номиналов
+        QCOMPARE(nominals.size(), expectedNominals.size());
+        // Проверяем каждый номинал
+        for (int i = 0; i < expectedNominals.size(); ++i) {
+            QCOMPARE(nominals[i], expectedNominals[i]);
+        }
+    }
+    // Если парсинг неуспешен - проверяем наличие конкретной ошибки
+    else if (expectedErrorType != noError) {
+        // QVERIFY2 проверяет наличие ошибки с указанными параметрами
+        QVERIFY2(hasError(errors, expectedErrorType, expectedErrorLine, expectedErrorValue),
+                 qPrintable(QString("Ожидаемая ошибка type=%1, line=%2, value='%3' не найдена")
+                            .arg(expectedErrorType).arg(expectedErrorLine).arg(expectedErrorValue)));
+    }
+}
+
+/**
+ * @brief Тест 11: Номиналы монет не являются целыми числами (2 ошибки).
+ * Отдельный тест, так как проверяет наличие двух ошибок типа nominalNotInteger одновременно.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test11()
+{
+    qDebug() << "Test 11: Coin denominations are not integers (2 errors)";
+    QString xml = "<config>\n<sum>112</sum>\n<nominals>\n<value>3.14</value>\n<value>9.67</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result); // QVERIFY проверяет, что парсинг завершился с ошибкой
+    QCOMPARE(errors.size(), 2); // QCOMPARE проверяет количество ошибок
+    // QVERIFY проверяет наличие каждой конкретной ошибки
+    QVERIFY(hasError(errors, nominalNotInteger, 4, "3.14"));
+    QVERIFY(hasError(errors, nominalNotInteger, 5, "9.67"));
+}
+
+/**
+ * @brief Тест 12: Номиналы монет меньше минимально допустимого (2 ошибки).
+ * Отдельный тест, так как проверяет наличие двух ошибок типа nominalLessMin одновременно.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test12()
+{
+    qDebug() << "Test 12: Coin denominations are less than the minimum allowed (2 errors)";
+    QString xml = "<config>\n<sum>1000</sum>\n<nominals>\n<value>-6</value>\n<value>-491</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 2);
+    QVERIFY(hasError(errors, nominalLessMin, 4, "-6"));
+    QVERIFY(hasError(errors, nominalLessMin, 5, "-491"));
+}
+
+/**
+ * @brief Тест 14: Количество номиналов больше максимума (2 ошибки).
+ * Отдельный тест, так как проверяет наличие двух разных типов ошибок одновременно:
+ * nominalExceedsMax и nominalsCountExceedsMax.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test14()
+{
+    qDebug() << "Test 14: The number of denominations is greater than the maximum and the last denomination exceeds the maximum value (2 errors)";
+    QString xml = "<config>\n<sum>670</sum>\n<nominals>\n";
+    // Генерируем 101 номинал для проверки ограничения на количество
+    for (int i = 1; i <= 101; ++i) {
+        xml += QString("<value>%1</value>\n").arg(i);
+    }
+    xml += "</nominals>\n</config>";
+
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 2);
+
+    // Проверяем обе ошибки
+    QVERIFY(hasError(errors, nominalExceedsMax, 104, "101"));
+    QVERIFY(hasError(errors, nominalsCountExceedsMax, 104, "101"));
+}
+
+/**
+ * @brief Тест 23: Смешанные валидные и некорректные номиналы (2 ошибки).
+ * Отдельный тест, так как проверяет наличие двух разных типов ошибок одновременно:
+ * nominalLessMin и nominalNotNumber.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test23()
+{
+    qDebug() << "Test 23: Mixed valid and incorrect denominations (2 errors)";
+    QString xml = "<config>\n<sum>50</sum>\n<nominals>\n<value>5</value>\n<value>-1</value>\n<value>10</value>\n<value>a</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 2);
+    QVERIFY(hasError(errors, nominalLessMin, 5, "-1"));
+    QVERIFY(hasError(errors, nominalNotNumber, 7, "a"));
+}
+
+/**
+ * @brief Тест 24: Комбинация ошибок данных сумма + номиналы (3 ошибки).
+ * Отдельный тест, так как проверяет наличие трёх разных типов ошибок одновременно:
+ * purchaseSumLessMin, nominalLessMin и nominalNotNumber.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test24()
+{
+    qDebug() << "Test 24: Combination of data errors sum + denominations (3 errors)";
+    QString xml = "<config>\n<sum>0</sum>\n<nominals>\n<value>-5</value>\n<value>abc</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 3);
+    QVERIFY(hasError(errors, purchaseSumLessMin, 2, "0"));
+    QVERIFY(hasError(errors, nominalLessMin, 4, "-5"));
+    QVERIFY(hasError(errors, nominalNotNumber, 5, "abc"));
+}
+
+/**
+ * @brief Тест 25: Логические ошибки номиналов дубликат + диапазон (2 ошибки)
+ * Отдельный тест, так как проверяет наличие двух разных типов ошибок одновременно:
+ * nominalDuplicate и nominalExceedsMax.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test25()
+{
+    qDebug() << "Test 25: Logical errors of denominations duplicate + range (2 errors)";
+    QString xml = "<config>\n<sum>50</sum>\n<nominals>\n<value>5</value>\n<value>5</value>\n<value>150</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 2);
+    QVERIFY(hasError(errors, nominalDuplicate, 5, "5"));
+    QVERIFY(hasError(errors, nominalExceedsMax, 6, "150"));
+}
+
+/**
+ * @brief Тест 26: Комбинация структурных и ошибок номиналов (3 ошибки)
+ * Отдельный тест, так как проверяет наличие трёх разных типов ошибок одновременно:
+ * unknownTag, missingTag и nominalExceedsMax.
+ */
+void Test_parseAndValidateData::testParseAndValidateData_Test26()
+{
+    qDebug() << "Test 26: Combination of structural and nominal errors (3 errors)";
+    QString xml = "<config>\n<unknown>333</unknown>\n<nominals>\n<value>200</value>\n</nominals>\n</config>";
+    int purchaseSum = 0;
+    QVector<int> nominals;
+    QSet<Error> errors;
+
+    bool result = parseAndValidateData(xml, purchaseSum, nominals, errors);
+
+    QVERIFY(!result);
+    QCOMPARE(errors.size(), 3);
+    QVERIFY(hasError(errors, unknownTag, 2, "unknown"));
+    QVERIFY(hasError(errors, missingTag, -1, "sum"));
+    QVERIFY(hasError(errors, nominalExceedsMax, 4, "200"));
+}
+
+
+
+
+/**
+ * @brief Главная функция тестового приложения.
+ * Последовательно запускает все тестовые классы и накапливает статус выполнения.
+ * @param argc - количество аргументов командной строки.
+ * @param argv - массив аргументов командной строки.
+ * @return 0, если все тесты пройдены успешно, иначе ненулевое значение.
+ */
 int main(int argc, char *argv[])
 {
     int status = 0;
@@ -792,8 +1176,10 @@ int main(int argc, char *argv[])
         Test_calculateOptimalCoins test4;
         status |= QTest::qExec(&test4, argc, argv);
     }
-
-
+    {
+        Test_parseAndValidateData test5;
+        status |= QTest::qExec(&test5, argc, argv);
+    }
     return status;
 }
 
