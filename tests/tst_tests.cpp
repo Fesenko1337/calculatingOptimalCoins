@@ -764,7 +764,7 @@ void Test_calculateOptimalCoins::testCalculateOptimalCoins()
 
     int totalSum = 0;
     for (auto it = usedCoins.constBegin(); it != usedCoins.constEnd(); ++it) {
-        totalSum += it.value();
+        totalSum += it.key() * it.value();
     }
     // QCOMPARE проверяет, что общая сумма монет равна purchaseSum + change
     QCOMPARE(totalSum, purchaseSum + change);
