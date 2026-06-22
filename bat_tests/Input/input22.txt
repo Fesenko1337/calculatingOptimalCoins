@@ -1,0 +1,7 @@
+<config>
+  <rub>300</rub>
+  <sum>935</sum>
+  <nominals>
+    <value>12</value>
+  </nominals>
+</config>

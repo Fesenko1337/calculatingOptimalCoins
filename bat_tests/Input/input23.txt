@@ -1,0 +1,6 @@
+<config>
+  <nominals>
+    <value>27</value>
+    <value>90</value>
+  </nominals>
+</config>

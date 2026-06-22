@@ -1,0 +1,7 @@
+<config>
+  <sum>150</sum>
+  <nominals>
+    <value>$</value>
+    <value>16</value>
+  </nominals>
+</config>

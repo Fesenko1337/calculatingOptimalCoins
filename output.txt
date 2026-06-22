@@ -1,0 +1,13 @@
+<config>
+  <change>0</change>
+  <nominals>
+    <nominal>
+      <value>3</value>
+      <count>1</count>
+    </nominal>
+    <nominal>
+      <value>1</value>
+      <count>1</count>
+    </nominal>
+  </nominals>
+</config>

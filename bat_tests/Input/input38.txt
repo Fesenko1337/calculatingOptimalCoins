@@ -1,0 +1,7 @@
+<config>
+  <sum>500</sum>
+  <nominals>
+    <value>5</value>
+    <value>5</value>
+  </nominals>
+</config>

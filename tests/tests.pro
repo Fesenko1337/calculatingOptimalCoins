@@ -1,22 +1,28 @@
-QT += core testlib xml
-CONFIG += c++17 console testcase
+QT += core xml testlib
+QT -= gui
+
+CONFIG += qt warn_on depend_includepath testcase
 CONFIG -= app_bundle
 
+TEMPLATE = app
 TARGET = tst_tests
 
+# Пути к заголовочным файлам
+INCLUDEPATH += ../calculatingOptimalCoins
 
-INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$OUT_PWD
+INCLUDEPATH += $$OUT_PWD/debug
 
+# Исходные файлы
+SOURCES += tst_tests.cpp \
+    ../calculatingOptimalCoins/coinSolver.cpp \
+    ../calculatingOptimalCoins/xmlParser.cpp \
+    ../calculatingOptimalCoins/fileHandler.cpp \
+    ../calculatingOptimalCoins/error.cpp
 
-SOURCES += \
-    tst_tests.cpp \
-    ../coinSolver.cpp \
-    ../error.cpp \
-    ../fileHandler.cpp \
-    ../xmlParser.cpp
-
+# Заголовочные файлы
 HEADERS += \
-    ../coinSolver.h \
-    ../error.h \
-    ../fileHandler.h \
-    ../xmlParser.h
+    ../calculatingOptimalCoins/coinSolver.h \
+    ../calculatingOptimalCoins/xmlParser.h \
+    ../calculatingOptimalCoins/fileHandler.h \
+    ../calculatingOptimalCoins/error.h

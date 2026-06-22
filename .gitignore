@@ -39,9 +39,8 @@ qrc_*.cpp
 ui_*.h
 
 # Документация Doxygen
-doc/html/
-doc/latex/
-Doxyfile.bak
+Doxygen/html/
+Doxygen/latex/
 
 # Временные и служебные файлы
 *.tmp

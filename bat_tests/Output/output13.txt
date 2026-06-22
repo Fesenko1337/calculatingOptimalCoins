@@ -1,0 +1,9 @@
+<config>
+  <change>0</change>
+  <nominals>
+    <nominal>
+      <value>1</value>
+      <count>1000</count>
+    </nominal>
+  </nominals>
+</config>

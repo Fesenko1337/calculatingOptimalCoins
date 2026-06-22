@@ -1,0 +1,3 @@
+<config>
+  <sum>100</sum>
+</config>
