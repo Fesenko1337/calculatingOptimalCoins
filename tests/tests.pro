@@ -10,9 +10,6 @@ TARGET = tst_tests
 # Пути к заголовочным файлам
 INCLUDEPATH += ../calculatingOptimalCoins
 
-INCLUDEPATH += $$OUT_PWD
-INCLUDEPATH += $$OUT_PWD/debug
-
 # Исходные файлы
 SOURCES += tst_tests.cpp \
     ../calculatingOptimalCoins/coinSolver.cpp \
@@ -26,3 +23,6 @@ HEADERS += \
     ../calculatingOptimalCoins/xmlParser.h \
     ../calculatingOptimalCoins/fileHandler.h \
     ../calculatingOptimalCoins/error.h
+
+# Генерировать moc-файлы в папке tests/
+MOC_DIR = .

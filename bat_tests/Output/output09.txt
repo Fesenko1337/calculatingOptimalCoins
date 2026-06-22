@@ -1,9 +1,0 @@
-<config>
-  <change>2</change>
-  <nominals>
-    <nominal>
-      <value>6</value>
-      <count>2</count>
-    </nominal>
-  </nominals>
-</config>
