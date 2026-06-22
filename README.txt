@@ -195,4 +195,5 @@ digraph call_graph {
 Автор: Фесенко Дмитрий
 Дата создания: Июнь 2026
 Версия программы: 1.0
+Ссылка на репозиторий: https://github.com/Fesenko1337/calculatingOptimalCoins
 \endverbatim
