@@ -1,0 +1,58 @@
+# ============================================
+# Папки сборки Qt (самое важное!)
+# ============================================
+build-*/
+*/build-*/
+*/*/build-*/
+
+# ============================================
+# Файлы настроек Qt Creator (содержат абсолютные пути!)
+# ============================================
+*.pro.user
+*.autosaver
+*.qbs.user
+*.creator
+*.creator.user
+
+# Служебные файлы сборки
+.qmake.stash
+Makefile
+Makefile.Debug
+Makefile.Release
+target_wrapper.sh
+target_wrapper.bat
+
+# Скомпилированные файлы
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.exe
+*.pdb
+
+# Сгенерированные Qt файлы
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# Документация Doxygen
+doc/html/
+doc/latex/
+Doxyfile.bak
+
+# Временные и служебные файлы
+*.tmp
+*.temp
+*.log
+*.bak
+*.orig
+*.swp
+*~
+Thumbs.db
+.DS_Store
+
+# Результаты тестов (если генерируются автоматически)
+test_results.txt
